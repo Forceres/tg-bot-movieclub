@@ -2,15 +2,32 @@
 name = "tg-bot-movieclub"
 version = "0.1.0"
 description = ""
-authors = ["Ilya <ilya.sereda.2004@mail.ru>"]
+authors = ["Ilya <ilya.sereda.2001@gmail.com>"]
 readme = "README.md"
+license = "MIT"
+
+[tool.black]
+line-length = 79
+target-version = ["py311"]
+include = "\\.pyi?$"
+exclude = '''
+/(
+  \.toml
+  |\.git
+  |\.ini
+  |Dockerfile
+)/
+'''
 
 [tool.poetry.dependencies]
 python = "^3.11"
 python-telegram-bot = "^20.4"
 aiosqlite = "^0.19.0"
-colorama = "^0.4.6"
 
+[tool.poetry.group.dev.dependencies]
+colorama = "^0.4.6"
+black = "^23.9.1"
+pre-commit = "^3.4.0"
 
 [build-system]
 requires = ["poetry-core"]
