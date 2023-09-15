@@ -21,7 +21,7 @@ class CustomFormatter(Formatter):
     def format(self, record: LogRecord) -> str:
         color = self.COLOURS.get(record.levelname, "")
         if color:
-            record.name = color + record.name
-            record.levelname = color + record.levelname
-            record.msg = color + record.msg
+            record.name = color + record.name + Fore.RESET
+            record.levelname = color + record.levelname + Fore.RESET
+            record.msg = color + record.msg + Fore.RESET
         return super().format(record)
