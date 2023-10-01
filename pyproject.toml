@@ -29,6 +29,12 @@ python-dotenv = "^1.0.0"
 colorama = "^0.4.6"
 black = "^23.9.1"
 pre-commit = "^3.4.0"
+poethepoet = "^0.24.0"
+
+[tool.poe.tasks]
+migration.script = "src.db.migrations.db_init:init_db"
+migration-revert.script = "src.db.migrations.db_delete:delete_db"
+seeders.script = "src.db.seeders.insert_movies:insert"
 
 [build-system]
 requires = ["poetry-core"]
