@@ -4,3 +4,5 @@ venv
 logs
 __pypackages__/
 __pycache__/
+src/db.sqlite3
+src/db/seeders/movies.json
