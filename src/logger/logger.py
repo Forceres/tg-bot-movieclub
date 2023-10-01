@@ -6,18 +6,17 @@ from logging import (
     StreamHandler,
     Formatter,
 )
-from dotenv import load_dotenv
-from os import getenv
+
 from datetime import datetime
 from sys import stdout
-from src.logger.formatter import CustomFormatter
 
-load_dotenv()
+from src.logger.formatter import CustomFormatter
+from src.config import Config
 
 
 def setup_logger():
     basicConfig(
-        level=getenv("LEVEL"),
+        level=Config.LOGGING_LEVEL.value,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M",
     )
