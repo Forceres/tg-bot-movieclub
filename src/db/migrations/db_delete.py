@@ -1,7 +1,7 @@
 from os import chdir, getcwd
 from os.path import join
 
-from db_interaction import db_interaction
+from src.db.migrations.db_interaction import db_interaction
 
 
 def delete_db() -> None:
