@@ -2,7 +2,7 @@ import logging
 
 from telegram.ext import Application
 
-from src.db.db import SqliteRepository
+from src.db.config.db import SqliteRepository
 
 
 async def startup(application: Application) -> None:
