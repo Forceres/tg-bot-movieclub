@@ -34,7 +34,7 @@ poethepoet = "^0.24.0"
 [tool.poe.tasks]
 migration.script = "src.db.migrations.db_init:init_db"
 migration-revert.script = "src.db.migrations.db_delete:delete_db"
-seeders.script = "src.db.seeders.insert_movies:insert"
+seeder.script = "src.db.seeders.insert_movies:insert"
 
 [build-system]
 requires = ["poetry-core"]
