@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS current_voting;
+DROP TABLE IF EXISTS votings;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS movies;
+DROP TABLE IF EXISTS allowed_users;
