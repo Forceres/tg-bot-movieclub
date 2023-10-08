@@ -10,5 +10,5 @@ def delete_db() -> None:
         join(path, "src", "db", "migrations", "db_delete.sql"), "rt"
     ) as fout:
         query = fout.read()
-    chdir("src")
+    chdir(path)
     db_interaction(query)
