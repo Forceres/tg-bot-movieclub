@@ -11,7 +11,7 @@ def insert() -> None:
     path = getcwd()
     with open(join(path, "src", "db", "seeders", "movies.json"), "rt") as fout:
         data = load(fout)
-    chdir("src")
+    chdir(path)
     conn = connect(Config.DATABASE.value)
     cursor = conn.cursor()
     data = [
@@ -30,9 +30,9 @@ def insert() -> None:
     try:
         cursor.executemany(
             """INSERT OR IGNORE INTO movies
-        (title, description, year, link,
-        duration, imdb_rating, start_watch, finish_watch)
-        VALUES (?,?,?,?,?,?,?,?)""",
+            (title, description, year, link,
+            duration, imdb_rating, start_watch, finish_watch)
+            VALUES (?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
             data,
         )
     except (IntegrityError, DatabaseError):
