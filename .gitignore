@@ -1,8 +1,9 @@
 venv
-.env
+.env.prod
+.env.dev
 .idea
 logs
 __pypackages__/
 __pycache__/
-src/db.sqlite3
+db.sqlite3
 src/db/seeders/movies.json
