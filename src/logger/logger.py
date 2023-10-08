@@ -9,6 +9,7 @@ from logging import (
 
 from datetime import datetime
 from sys import stdout
+from os import listdir, mkdir
 
 from src.logger.formatter import CustomFormatter
 from src.config import Config
@@ -32,9 +33,12 @@ def setup_logger():
     if logger.hasHandlers():
         logger.handlers.clear()
 
+    if "logs" not in listdir("."):
+        mkdir("./logs")
+
     file_handler = FileHandler(
         "{0}/{1}.log".format(
-            "../logs", datetime.now().strftime("%Y-%m-%d %H-%M")
+            "./logs", datetime.now().strftime("%Y-%m-%d %H-%M")
         )
     )
     file_handler.setFormatter(default_formatter)
