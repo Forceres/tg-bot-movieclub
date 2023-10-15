@@ -1,6 +1,5 @@
 from sqlite3 import connect, IntegrityError, DatabaseError
 from json import load
-from unicodedata import normalize
 from os import chdir, getcwd
 from os.path import join
 
@@ -9,16 +8,22 @@ from src.config import Config
 
 def insert() -> None:
     path = getcwd()
-    with open(join(path, "src", "db", "seeders", "movies.json"), "rt") as fout:
+    with open(
+        join(path, "src", "db", "seeders", "movies.json"),
+        "rt",
+        encoding="utf-8",
+    ) as fout:
         data = load(fout)
     chdir(path)
     conn = connect(Config.DATABASE.value)
     cursor = conn.cursor()
     data = [
         [
-            item.get("title").encode("utf-8"),
-            normalize("NFKC", item.get("description")).encode("utf-8"),
+            item.get("title"),
+            item.get("description"),
+            item.get("director"),
             item.get("year"),
+            item.get("countries"),
             item.get("link"),
             item.get("duration"),
             float(item.get("rating")),
@@ -30,9 +35,9 @@ def insert() -> None:
     try:
         cursor.executemany(
             """INSERT OR IGNORE INTO movies
-            (title, description, year, link,
+            (title, description, director, year, countries, link,
             duration, imdb_rating, start_watch, finish_watch)
-            VALUES (?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
+            VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
             data,
         )
     except (IntegrityError, DatabaseError):
