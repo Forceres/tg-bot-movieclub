@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import LiteralString
-import logging
+from logging import getLogger
 
 from aiosqlite import (
     connect,
@@ -11,6 +11,8 @@ from aiosqlite import (
 )
 
 from src.config import Config
+
+logger = getLogger(__name__)
 
 
 class AbstractRepository(ABC):
@@ -81,10 +83,10 @@ class SqliteRepository(AbstractRepository, object):
             try:
                 cls._conn = await connect(Config.DATABASE.value)
             except ValueError as exc:
-                logging.error("Connection was not established! %s" % exc)
+                logger.error("Connection was not established! %s" % exc)
                 cls._conn = None
             else:
-                logging.info("Connection to DB was established!")
+                logger.info("Connection to DB was established!")
 
     @classmethod
     async def close(cls) -> None:
@@ -108,22 +110,24 @@ class SqliteRepository(AbstractRepository, object):
         try:
             response: Cursor = await self._cursor.execute(query, params)
         except (DatabaseError, IntegrityError) as exc:
-            logging.error(
+            logger.error(
                 "Error while executing query -> %s, error -> %s" % (query, exc)
             )
             await self.rollback()
         else:
+            logger.debug("Query -> %s - completed!" % query)
             return response
 
     async def query_script(self, query: LiteralString) -> Cursor | None:
         try:
             response = await self._cursor.executescript(query)
         except (DatabaseError, IntegrityError) as exc:
-            logging.error(
+            logger.error(
                 "Error while executing query -> %s, error -> %s" % (query, exc)
             )
             await self.rollback()
         else:
+            logger.debug("Query -> %s - completed!" % query)
             return response
 
     async def multi_query(
@@ -134,11 +138,12 @@ class SqliteRepository(AbstractRepository, object):
         try:
             response = await self._cursor.executemany(query, params)
         except (DatabaseError, IntegrityError) as exc:
-            logging.error(
+            logger.error(
                 "Error while executing query -> %s, error -> %s" % (query, exc)
             )
             await self.rollback()
         else:
+            logger.debug("Query -> %s - completed!" % query)
             return response
 
     async def commit(self) -> None:
