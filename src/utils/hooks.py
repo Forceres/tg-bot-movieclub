@@ -1,13 +1,15 @@
-import logging
+from logging import getLogger
 
 from telegram.ext import Application
 
 from src.db.config.db import SqliteRepository
 from src.utils.queries import Queries
 
+logger = getLogger(__name__)
+
 
 async def startup(application: Application) -> None:
-    logging.info("Starting up Bot!")
+    logger.info("Starting up Bot!")
     async with SqliteRepository() as db:
         await db.single_query(Queries.ENABLE_FOREIGN_KEYS.value)
     if not SqliteRepository.check_connection():
