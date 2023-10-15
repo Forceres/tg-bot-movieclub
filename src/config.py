@@ -3,7 +3,9 @@ from os import getenv
 
 from dotenv import load_dotenv
 
-load_dotenv(getenv("ENV_FILE"))
+env_file_name = getenv("ENV_FILE", ".env.dev")
+
+load_dotenv(dotenv_path=env_file_name)
 
 
 class Config(Enum):
