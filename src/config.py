@@ -9,6 +9,7 @@ load_dotenv(dotenv_path=env_file_name)
 
 
 class Config(Enum):
+    GROUP_ID = getenv("GROUP_ID")
     DATABASE = getenv("DATABASE")
     LOGGING_LEVEL = getenv("LEVEL")
     TOKEN = getenv("TOKEN")
