@@ -1,11 +1,3 @@
-CREATE TABLE IF NOT EXISTS allowed_users
-(
-    id         INTEGER PRIMARY KEY,
-    tg_id      BIGINT                              NOT NULL UNIQUE,
-    admin BOOLEAN,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS movies
 (
     id           INTEGER PRIMARY KEY,
@@ -20,7 +12,8 @@ CREATE TABLE IF NOT EXISTS movies
     rating       FLOAT,
     start_watch  TIMESTAMP,
     finish_watch TIMESTAMP,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    suggested_by BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS votings
