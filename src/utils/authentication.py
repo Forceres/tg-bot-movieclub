@@ -28,18 +28,19 @@ async def _check_if_in_group(update: Update) -> bool | None:
 
 async def _check_if_admin(update: Update) -> bool | None:
     try:
+        bot = update.get_bot()
         admins = [
             admin.user.id
-            for admin in await update.message.chat.get_administrators()
+            for admin in await bot.get_chat_administrators(
+                chat_id=Config.GROUP_ID.value
+            )
         ]
     except TelegramError:
         logger.error(
-            """Destination error -> you can't invoke this command
-            in the private chat"""
+            """Destination error -> there is no such a chat -> %s"""
+            % Config.GROUP_ID.value
         )
-        await update.message.reply_text(
-            "Вы не можете вызвать эту команду в личном чате!"
-        )
+        await update.message.reply_text("Нет такого чата!")
     else:
         if update.effective_user.id not in admins:
             logger.error(
@@ -52,24 +53,24 @@ async def _check_if_admin(update: Update) -> bool | None:
 
 
 def authentication(
-    func: Callable,
-) -> Callable[[tuple[Any, ...]], Coroutine[Any, Any, None]]:
-    async def wrapper(*args):
-        if not await _check_if_in_group(args[0]):
+    func: Callable[[Update, Any], Coroutine[Any, Any, None]]
+) -> Callable[[Update, Any], Coroutine[Any, Any, None]]:
+    async def wrapper(update: Update, args: Any):
+        if not await _check_if_in_group(update):
             return
-        await func(*args)
+        await func(update, args)
 
     return wrapper
 
 
 def admin_only(
-    func: Callable,
-) -> Callable[[tuple[Any, ...]], Coroutine[Any, Any, None]]:
-    async def wrapper(*args):
-        if not await _check_if_in_group(args[0]) or not await _check_if_admin(
-            args[0]
+    func: Callable[[Update, Any], Coroutine[Any, Any, None]]
+) -> Callable[[Update, Any], Coroutine[Any, Any, None]]:
+    async def wrapper(update: Update, args: Any):
+        if not await _check_if_in_group(update) or not await _check_if_admin(
+            update
         ):
             return
-        await func(*args)
+        await func(update, args)
 
     return wrapper
