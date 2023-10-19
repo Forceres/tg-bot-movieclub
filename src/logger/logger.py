@@ -1,10 +1,10 @@
 from logging import (
     basicConfig,
     getLogger,
-    CRITICAL,
     FileHandler,
     StreamHandler,
     Formatter,
+    WARNING,
 )
 
 from datetime import datetime
@@ -26,8 +26,8 @@ def setup_logger():
         "%(asctime)s %(name)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M"
     )
 
-    getLogger("httpx").setLevel(CRITICAL)
-    getLogger("apscheduler").setLevel(CRITICAL)
+    getLogger("httpx").setLevel(WARNING)
+    getLogger("apscheduler").setLevel(WARNING)
 
     logger = getLogger()
     if logger.hasHandlers():
