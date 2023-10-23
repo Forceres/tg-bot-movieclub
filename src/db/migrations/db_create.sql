@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS movies
     director     VARCHAR,
     year         INTEGER                             NOT NULL,
     countries    VARCHAR,
+    genres VARCHAR,
     link         VARCHAR                             NOT NULL UNIQUE,
     duration     INTEGER,
     imdb_rating  FLOAT,
