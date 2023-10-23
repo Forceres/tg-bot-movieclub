@@ -1,26 +1,135 @@
 from logging import getLogger
+from datetime import datetime
 
-from telegram import Update
+from telegram import Update, Message
 from telegram.ext import ContextTypes
+from telegram.constants import ParseMode
+from telegraph.exceptions import TelegraphException
 
-from src.db.services.getting import retrieve_current_session_movies
+
+from src.config import Config
+from src.db.services.getting import (
+    retrieve_current_session_movies,
+    retrieve_already_watched_movies,
+)
 from src.utils.authentication import authentication
+from src.utils.generate_paginated_html import generate_html
+from src.utils.telegraph_init import telegraph_init
 
 logger = getLogger(__name__)
 
 
+async def define_custom_movie_description(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> Message:
+    context.chat_data["custom"] = " ".join(context.args)
+    return await update.message.reply_text("Добавил ваше описание!")
+
+
 @authentication
 async def get_current_movies(
-    update: Update, _context: ContextTypes.DEFAULT_TYPE
-):
-    response = await retrieve_current_session_movies()
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> Message:
+    movies = await retrieve_current_session_movies()
     output = [
-        f"""{idx + 1}. Режиссер: {item[0]}.
-    Фильм: {item[1]}.
-    Год: {item[2]}.
-    Длительность в минутах: {item[3]}
-    Ссылка на кинопоиск: {item[4]}
+        f"""<b>{idx + 1}. Фильм: {item[1]}.</b>
+<i>Жанры: {item[5]}.</i>
+<i>Страны производства: {item[6]}.</i>
+<i>Рейтинг IMDb: {item[7]}.</i>
+<i>Режиссер: {item[0]}.</i>
+<i>Год: {item[2]}.</i>
+<i>Длительность в минутах: {item[3]}.</i>
+<i>Предложен: {item[8]}.</i>
+<i>Ссылка на кинопоиск: {item[4]}</i>
     """
-        for idx, item in enumerate(response)
+        for idx, item in enumerate(movies)
     ]
-    return await update.message.chat.send_message("\n".join(output))
+    if context.chat_data.get("custom"):
+        output.insert(0, context.chat_data["custom"])
+    return await update.message.chat.send_message(
+        "\n".join(output), parse_mode=ParseMode.HTML
+    )
+
+
+async def get_already_watched_movies_links(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> bool | Message:
+    telegraph = await telegraph_init(context)
+    urls = context.chat_data.get("urls")
+    movies = await retrieve_already_watched_movies()
+    pages_data = await generate_html(movies)
+    if not urls:
+        if not context.chat_data.get("msg"):
+            new_pages = [
+                (
+                    await telegraph.create_page(
+                        title="Список просмотренных фильмов",
+                        html_content=pages_data[data],
+                        author_name="КиноКлассБот",
+                    )
+                )["url"]
+                for data in range(0, len(pages_data))
+            ]
+            context.chat_data["page_data"] = pages_data[-1]
+            context.chat_data["urls"] = new_pages[-1]
+            links = [
+                f"{idx + 1}. {link}" for idx, link in enumerate(new_pages)
+            ]
+            msg_id = context.chat_data.get("msg")
+            if msg_id:
+                await update.get_bot().delete_message(
+                    Config.GROUP_ID.value, msg_id
+                )
+            else:
+                msg = await update.message.chat.send_message(
+                    text="\n".join(links)
+                )
+                context.chat_data["msg"] = msg.id
+            context.chat_data["all_msgs"] = links
+            await update.get_bot().pin_chat_message(
+                Config.GROUP_ID.value,
+                update.message.id + 1,
+                disable_notification=True,
+            )
+            return await update.get_bot().delete_message(
+                chat_id=Config.GROUP_ID.value, message_id=update.message.id + 2
+            )
+        else:
+            links = context.chat_data["all_msg"]
+            new_link = (
+                await telegraph.create_page(
+                    title="Список просмотренных фильмов",
+                    html_content=pages_data[-1],
+                    author_name="КиноКлассБот",
+                )
+            )["url"]
+            links.append(f"{len(links) + 1}. {new_link}")
+            context.chat_data["urls"] = new_link
+            context.chat_data["all_msg"] = links
+            return await update.get_bot().edit_message_text(
+                links, Config.GROUP_ID.value, context.chat_data["msg"]
+            )
+    else:
+        url = context.chat_data["urls"]
+        page_data = context.chat_data["page_data"]
+        try:
+            page = await telegraph.edit_page(
+                path=url.split("/")[-1],
+                title="Список просмотренных фильмов",
+                html_content=page_data,
+            )
+        except TelegraphException as exc:
+            logger.error(exc)
+            context.chat_data["urls"] = None
+            return await get_already_watched_movies_links(update, context)
+        msg_id = context.chat_data.get("msg")
+        links = context.chat_data["all_msgs"]
+        links.pop(-1)
+        links.append(f"{len(links) + 1}. {page['url']}")
+        context.chat_data["all_msg"] = links
+        links.append(datetime.utcnow().strftime("%m-%d-%Y %H:%M:%S"))
+        await update.get_bot().edit_message_text(
+            text="\n".join(links),
+            chat_id=Config.GROUP_ID.value,
+            message_id=msg_id,
+        )
