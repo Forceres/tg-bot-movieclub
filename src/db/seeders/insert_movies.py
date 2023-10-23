@@ -24,6 +24,7 @@ def insert() -> None:
             item.get("director"),
             item.get("year"),
             item.get("countries"),
+            item.get("genres"),
             item.get("link"),
             item.get("duration"),
             float(item.get("rating")),
@@ -35,9 +36,9 @@ def insert() -> None:
     try:
         cursor.executemany(
             """INSERT OR IGNORE INTO movies
-            (title, description, director, year, countries, link,
+            (title, description, director, year, countries, genres, link,
             duration, imdb_rating, start_watch, finish_watch)
-            VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
+            VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
             data,
         )
     except (IntegrityError, DatabaseError):
