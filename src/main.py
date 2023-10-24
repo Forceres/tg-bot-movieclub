@@ -1,13 +1,12 @@
-from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update
+from telegram.ext import Application
+from telegraph.aio import Telegraph
 
-from logger.logger import setup_logger
-from config import Config
-from utils.hooks import startup, shutdown
-
-
-async def start(updater: Update, _context: ContextTypes.DEFAULT_TYPE):
-    return await updater.message.reply_text("Hello, forceres!")
+from src.commands import get_all_handlers
+from src.logger.logger import setup_logger
+from src.config import Config
+from src.utils.hooks import startup, shutdown
+from src.utils.error_handler import error_handler
 
 
 def main():
@@ -19,8 +18,10 @@ def main():
         .post_stop(shutdown)
         .build()
     )
-    application.add_handler(CommandHandler("start", start))
-    application.run_polling()
+    application.bot_data["telegraph"] = Telegraph()
+    application.add_handlers(get_all_handlers())
+    application.add_error_handler(error_handler)
+    application.run_polling(allowed_updates=Update.ALL_TYPES, read_timeout=30)
 
 
 if __name__ == "__main__":
