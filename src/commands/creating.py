@@ -5,11 +5,17 @@ from src.db.services.creating import (
     suggest_new_movie,
     check_if_movies_exist,
     update_existed_movies,
+    create_new_voting,
 )
-from src.utils.authentication import authentication
+from src.utils.authentication import authentication, admin_only
 from src.utils.convert_json_to_movie import process_movies_json
 from src.utils.kinopoisk_api_call import api_call
 from src.utils.parse_raw_string import parse_ids, parse_refs
+
+
+@admin_only
+async def create_voting(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await create_new_voting([1, 2, 3])
 
 
 @authentication
