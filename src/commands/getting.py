@@ -75,6 +75,10 @@ async def get_current_movies(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> Message:
     movies = await retrieve_current_session_movies()
+    if not movies:
+        return await update.message.chat.send_message(
+            "Мы пока ничего не смотрим!"
+        )
     output = [
         f"""<b>{idx + 1}. Фильм: {item[1]}.</b>
 <i>Жанры: {item[5]}.</i>
@@ -88,6 +92,7 @@ async def get_current_movies(
     """
         for idx, item in enumerate(movies)
     ]
+    output.insert(0, "<b>#смотрим</b>")
     if context.chat_data.get("custom"):
         output.insert(0, context.chat_data["custom"])
     return await update.message.chat.send_message(
