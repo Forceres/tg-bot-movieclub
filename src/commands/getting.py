@@ -1,3 +1,4 @@
+from locale import setlocale, LC_ALL
 from logging import getLogger
 from datetime import datetime
 
@@ -6,24 +7,67 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from telegraph.exceptions import TelegraphException
 
-
 from src.config import Config
 from src.db.services.getting import (
     retrieve_current_session_movies,
     retrieve_already_watched_movies,
 )
-from src.utils.authentication import authentication
+from src.utils.authentication import authentication, admin_only
 from src.utils.generate_paginated_html import generate_html
 from src.utils.telegraph_init import telegraph_init
 
 logger = getLogger(__name__)
 
 
+@admin_only
 async def define_custom_movie_description(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> Message:
     context.chat_data["custom"] = " ".join(context.args)
     return await update.message.reply_text("Добавил ваше описание!")
+
+
+@admin_only
+async def change_watch_date(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    date_string = context.args
+    if len(date_string) > 1 or len(date_string[0]) > 5:
+        return await update.message.reply_text(
+            "Некорректный формат, передайте день(/,:,-)месяц, н-р, 03/05"
+        )
+    year = datetime.now().year
+    fmt = ""
+    if "-" in date_string[0]:
+        fmt = "%d-%m"
+    elif ":" in date_string[0]:
+        fmt = "%d:%m"
+    elif "/" in date_string[0]:
+        fmt = "%d/%m"
+    else:
+        return await update.message.reply_text(
+            "Некорректный формат, передайте день(/,:,-)месяц, н-р, 03/05"
+        )
+    try:
+        setlocale(LC_ALL, "ru")
+        date = (
+            datetime.strptime(date_string[0], fmt)
+            .replace(year=year, hour=21, minute=30)
+            .isoformat()
+        )
+        context.chat_data["date"] = date
+        return await update.message.reply_text(
+            "Фильм перенесён!\nТекущая дата просмотра: %s"
+            % datetime.fromisoformat(date).strftime("%A, %d-%m-%Y")
+        )
+    except ValueError:
+        logger.error(
+            "Date parse error -> date_string -> %s -> format -> %s"
+            % (date_string[0], fmt)
+        )
+        return await update.message.reply_text(
+            "Некорректный формат, передайте день(/,:,-)месяц, н-р, 03/05"
+        )
 
 
 @authentication
