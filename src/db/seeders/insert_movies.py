@@ -37,8 +37,8 @@ def insert() -> None:
         cursor.executemany(
             """INSERT OR IGNORE INTO movies
             (title, description, director, year, countries, genres, link,
-            duration, imdb_rating, start_watch, finish_watch)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING""",
+            duration, imdb_rating, start_watch, finish_watch, suggested_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT DO NOTHING""",
             data,
         )
     except (IntegrityError, DatabaseError):
