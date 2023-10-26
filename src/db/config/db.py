@@ -115,7 +115,7 @@ class SqliteRepository(AbstractRepository, object):
             )
             await self.rollback()
         else:
-            logger.debug("Query -> %s - completed!" % query)
+            logger.warning("Query completed! -> {}".format(query))
             return response
 
     async def query_script(self, query: LiteralString) -> Cursor | None:
