@@ -16,9 +16,7 @@ class Queries(Enum):
      WHERE finish_watch IS NOT NULL
      ORDER BY finish_watch DESC"""
     ENABLE_FOREIGN_KEYS = """PRAGMA foreign_keys = ON"""
-    CREATE_VOTING = (
-        """INSERT INTO votings (type) VALUES ('asc') RETURNING id"""
-    )
+    CREATE_VOTING = """INSERT INTO votings (type) VALUES (?) RETURNING id"""
     SYNCHRONIZE_MOVIES_VOTINGS_TABLE = (
         "INSERT INTO movies_votings (movie_id, voting_id) VALUES (?,?)"
     )
@@ -30,3 +28,5 @@ class Queries(Enum):
     UPDATE_EXISTED_MOVIES = """UPDATE movies SET
     created_at = CURRENT_TIMESTAMP, start_watch = NULL,
     finish_watch = NULL, suggested_by = '%s' WHERE link == (?)"""
+    GET_SUGGESTED_MOVIES = """SELECT id, title FROM movies WHERE
+    strftime('%Y-%m-%d',created_at) > date('now','-1 month')"""
