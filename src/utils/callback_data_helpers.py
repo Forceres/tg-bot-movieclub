@@ -13,33 +13,23 @@ async def process_callback_data(
         movies,
         offset,
         limit,
-        current_iteration,
         movies_iterations,
         keyboard,
-    ) = context.chat_data["watched"]
+    ) = context.chat_data["suggested"]
     query_data = query.data
     match query_data:
-        case ">":
-            offset = offset + 30
-            current_iteration += 1
-        case "<":
-            offset = offset - 30
-            current_iteration -= 1
-        case "0":
-            return False
-        case _:
-            return not await query.delete_message()
+        case "right":
+            offset = offset + 10
+        case "left":
+            offset = offset - 10
     if offset < 0:
-        offset = movies_iterations * 30 - 30
-        current_iteration = movies_iterations
-    elif movies_iterations * 30 <= offset:
+        offset = movies_iterations * 10 - 10
+    elif movies_iterations * 10 <= offset:
         offset = 0
-        current_iteration = 1
-    context.chat_data["watched"] = [
+    context.chat_data["suggested"] = [
         movies,
         offset,
         limit,
-        current_iteration,
         movies_iterations,
         keyboard,
     ]
