@@ -58,7 +58,7 @@ def authentication(
     async def wrapper(update: Update, args: Any):
         if not await _check_if_in_group(update):
             return
-        await func(update, args)
+        return await func(update, args)
 
     return wrapper
 
@@ -71,6 +71,6 @@ def admin_only(
             update
         ):
             return
-        await func(update, args)
+        return await func(update, args)
 
     return wrapper
