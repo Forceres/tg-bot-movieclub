@@ -26,7 +26,17 @@ class Queries(Enum):
     VALUES (?,?,?,?,?,?,?,?,?,?)
     """
     UPDATE_EXISTED_MOVIES = """UPDATE movies SET
-    created_at = CURRENT_TIMESTAMP, start_watch = NULL,
-    finish_watch = NULL, suggested_by = '%s' WHERE link == (?)"""
+    created_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime'),
+    start_watch = NULL, finish_watch = NULL,
+    suggested_by = '%s' WHERE link == (?)"""
     GET_SUGGESTED_MOVIES = """SELECT id, title FROM movies WHERE
     strftime('%Y-%m-%d',created_at) > date('now','-1 month')"""
+    GET_CURRENT_VOTING_ID_AND_MOVIE_ID = """
+    SELECT m.id, v.id FROM movies_votings mv
+    LEFT JOIN main.movies m on m.id = mv.movie_id
+    LEFT JOIN main.votings v on v.id = mv.voting_id
+    WHERE m.title == (?) AND v.finished_at is NULL
+    """
+    DEFINE_WINNER = """UPDATE votings SET winner_id = '%s',
+    finished_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime')
+    WHERE id == (?)"""
