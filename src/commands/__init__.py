@@ -3,6 +3,7 @@ from telegram.ext import (
     MessageHandler,
     ConversationHandler,
     CallbackQueryHandler,
+    PollAnswerHandler,
 )
 from telegram.ext.filters import Regex
 
@@ -13,6 +14,7 @@ from src.commands.creating import (
     paginate_movies_button_callback,
     get_suggestions_and_create_voting,
     cancel,
+    receive_voting_results,
 )
 from src.commands.getting import (
     change_watch_date,
@@ -37,6 +39,7 @@ def get_all_handlers() -> list:
             & Regex(r"https://www.kinopoisk.ru/film/\d+/[\s|,]?"),
             suggest_movie,
         ),
+        PollAnswerHandler(receive_voting_results),
         ConversationHandler(
             entry_points=[CommandHandler("vote", create_voting_type_keyboard)],
             states={
@@ -44,8 +47,7 @@ def get_all_handlers() -> list:
                 2: [
                     CallbackQueryHandler(paginate_movies_button_callback),
                     MessageHandler(
-                        Regex(r"(\d{1,3}(?:,\s*\d{1,3})(?![\d\s|[\w|\W]))")
-                        | Regex(r"(^\d{1,3}$)"),
+                        Regex(r"(\d{1,3}(?:,\s*\d{1,3})(?![\d\s|[\w|\W]))"),
                         get_suggestions_and_create_voting,
                     ),
                 ],

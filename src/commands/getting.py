@@ -8,10 +8,11 @@ from telegram.constants import ParseMode
 from telegraph.exceptions import TelegraphException
 
 from src.config import Config
-from src.db.services.getting import (
+from src.db.services import (
     retrieve_current_session_movies,
     retrieve_already_watched_movies,
 )
+
 from src.utils.authentication import authentication, admin_only
 from src.utils.generate_paginated_html import generate_html
 from src.utils.telegraph_init import telegraph_init
@@ -55,7 +56,7 @@ async def change_watch_date(
             .replace(year=year, hour=21, minute=30)
             .isoformat()
         )
-        context.chat_data["date"] = date
+        context.bot_data["date"] = date
         return await update.message.reply_text(
             "Фильм перенесён!\nТекущая дата просмотра: %s"
             % datetime.fromisoformat(date).strftime("%A, %d-%m-%Y")
