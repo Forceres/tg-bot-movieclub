@@ -28,7 +28,7 @@ class Queries(Enum):
     UPDATE_EXISTED_MOVIES = """UPDATE movies SET
     created_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime'),
     start_watch = NULL, finish_watch = NULL,
-    suggested_by = '%s' WHERE link == (?)"""
+    suggested_by = (?) WHERE link == (?)"""
     GET_SUGGESTED_MOVIES = """SELECT id, title FROM movies WHERE
     strftime('%Y-%m-%d',created_at) > date('now','-1 month')"""
     GET_CURRENT_VOTING_ID_AND_MOVIE_ID = """
@@ -37,6 +37,15 @@ class Queries(Enum):
     LEFT JOIN main.votings v on v.id = mv.voting_id
     WHERE m.title == (?) AND v.finished_at is NULL
     """
-    DEFINE_WINNER = """UPDATE votings SET winner_id = '%s',
+    DEFINE_WINNER = """UPDATE votings SET winner_id = (?),
     finished_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime')
-    WHERE id == (?)"""
+    WHERE id == (?) RETURNING winner_id"""
+    SYNCHRONIZE_MOVIES_SESSIONS_TABLE = (
+        """INSERT INTO movies_sessions (movie_id, session_id) VALUES (?,?)"""
+    )
+    CHECK_IF_CURRENT_SESSION_EXISTS = (
+        """SELECT id FROM sessions WHERE finished_at is NULL"""
+    )
+    CREATE_SESSION = """INSERT INTO sessions DEFAULT VALUES RETURNING id"""
+    UPDATE_RATING = """UPDATE movies SET rating = (?) WHERE title == (?)"""
+    DELETE_CURRENT_VOTING = """DELETE FROM votings WHERE finished_at IS NULL"""
