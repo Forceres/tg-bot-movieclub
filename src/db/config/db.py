@@ -75,6 +75,10 @@ class SqliteRepository(AbstractRepository, object):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        if exc_type is None:
+            await self.commit()
+        else:
+            await self.rollback()
         await self._cursor.close()
 
     @classmethod
@@ -113,7 +117,7 @@ class SqliteRepository(AbstractRepository, object):
             logger.error(
                 "Error while executing query -> %s, error -> %s" % (query, exc)
             )
-            await self.rollback()
+            raise exc
         else:
             logger.warning("Query completed! -> {}".format(query))
             return response
@@ -141,7 +145,7 @@ class SqliteRepository(AbstractRepository, object):
             logger.error(
                 "Error while executing query -> %s, error -> %s" % (query, exc)
             )
-            await self.rollback()
+            raise exc
         else:
             logger.debug("Query -> %s - completed!" % query)
             return response

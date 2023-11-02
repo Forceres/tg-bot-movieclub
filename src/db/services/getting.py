@@ -13,7 +13,7 @@ async def retrieve_current_session_movies() -> Iterable[Row]:
             Queries.GET_CURRENT_MOVIES.value
         )
         output: Iterable[Row] = await cursor.fetchall()
-    return output
+        return output
 
 
 async def retrieve_suggested_movies() -> Iterable[Row] | bool:
@@ -21,10 +21,8 @@ async def retrieve_suggested_movies() -> Iterable[Row] | bool:
         cursor: Cursor = await db.single_query(
             Queries.GET_SUGGESTED_MOVIES.value
         )
-        if cursor is None:
-            return False
         output: Iterable[Row] = await cursor.fetchall()
-    return output
+        return output
 
 
 async def retrieve_already_watched_movies() -> Iterable[Row]:
@@ -33,4 +31,4 @@ async def retrieve_already_watched_movies() -> Iterable[Row]:
             Queries.GET_ALREADY_WATCHED_MOVIES.value
         )
         output: Iterable[Row] = await cursor.fetchall()
-    return output
+        return output
