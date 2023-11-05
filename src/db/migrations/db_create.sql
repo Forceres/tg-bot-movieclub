@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS votings
 (
     id          INTEGER PRIMARY KEY,
     winner_id   INTEGER,
-    type        VARCHAR                                                            NOT NULL CHECK ( type == 'schulze' OR type == 'asc' OR type == 'desc'),
+    type        VARCHAR                                                            NOT NULL CHECK (type == 'asc' OR type == 'desc'),
     created_at  TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M', 'now', 'localtime')) NOT NULL,
     finished_at TIMESTAMP,
     FOREIGN KEY (winner_id) REFERENCES movies (id) ON DELETE CASCADE
