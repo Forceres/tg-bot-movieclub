@@ -19,7 +19,7 @@ async def generate_html(movies: Iterable) -> list:
     <br><b>Рейтинг КиноКласса:
     {item[8] if item[8] is not None else "<s>Отсутствует</s>"}</b>
     <br><i>Дата просмотра:
-    {datetime.fromisoformat(item[9]).strftime("%d-%m-%Y %H:%M:%S")}</i>
+    {datetime.fromisoformat(item[9]).strftime("%d-%m-%Y %H:%M")}</i>
     <br><i>Предложен:
     {item[10] if item[10] is not None else "<s>Неизвестно</s>"}</i>
     <br><a href={item[5]}><i>Ссылка</i></a>

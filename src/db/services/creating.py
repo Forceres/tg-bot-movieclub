@@ -63,10 +63,11 @@ async def check_if_movies_exist(refs: list) -> Iterable:
             return []
 
 
-async def update_existed_movies(refs: list, suggested_by):
+async def update_existed_movies(refs: list, suggested_by: str):
     async with SqliteRepository() as db:
         await db.multi_query(
-            Queries.UPDATE_EXISTED_MOVIES.value % suggested_by, refs
+            Queries.UPDATE_EXISTED_MOVIES.value,
+            [(suggested_by, *ref) for ref in refs],
         )
         return True
 
