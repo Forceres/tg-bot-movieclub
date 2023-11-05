@@ -34,9 +34,8 @@ async def create_voting_type_keyboard(
         )
     keyboard = [
         [
-            InlineKeyboardButton("Максимум", callback_data="asc"),
-            InlineKeyboardButton("Минимум", callback_data="desc"),
-            InlineKeyboardButton("Шульце", callback_data="schultze"),
+            InlineKeyboardButton("Возрастающее", callback_data="asc"),
+            InlineKeyboardButton("Убывающее", callback_data="desc"),
         ]
     ]
     markup = InlineKeyboardMarkup(keyboard)
@@ -54,7 +53,7 @@ async def base_settings_button_callback(
 ):
     query = update.callback_query
     await query.answer()
-    if query.data in ["asc", "desc", "schultze"]:
+    if query.data in ["asc", "desc"]:
         context.chat_data["type"] = query.data
         keyboard = [
             [
@@ -96,19 +95,31 @@ async def base_settings_button_callback(
             keyboard,
         ]
 
-        markup = InlineKeyboardMarkup(keyboard)
         output = "\n".join(
             [
                 f"{offset + idx + 1}. {movie[1]}"
                 for idx, movie in enumerate(movies[offset : limit + offset])
             ]
         )
-        await update.get_bot().edit_message_text(
-            "Выбери фильмы!\n%s" % output,
-            chat_id=Config.GROUP_ID.value,
-            message_id=context.chat_data["message_id"],
-            reply_markup=markup,
-        )
+
+        if len(*movies) > limit:
+            markup = InlineKeyboardMarkup(keyboard)
+            await update.get_bot().edit_message_text(
+                "Выбери фильмы!"
+                "P.S. передавай номера фильмов через запятую (минимум 2),"
+                " 🤫🤫🤫 только никому не говори)\n%s" % output,
+                chat_id=Config.GROUP_ID.value,
+                message_id=context.chat_data["message_id"],
+                reply_markup=markup,
+            )
+        else:
+            await update.get_bot().edit_message_text(
+                "Выбери фильмы!"
+                "P.S. передавай номера фильмов через запятую (минимум 2),"
+                " 🤫🤫🤫 только никому не говори)\n%s" % output,
+                chat_id=Config.GROUP_ID.value,
+                message_id=context.chat_data["message_id"],
+            )
         return 2
 
 
@@ -192,65 +203,53 @@ async def receive_voting_results(
     answers = update.poll_answer.option_ids
     user_id = update.poll_answer.user.id
     chosen = [questions[answer] for answer in answers]
-    if poll.get("type") != "schultze":
-        results = {question: 0 for question in questions}
+    results = {question: 0 for question in questions}
+    if poll.get("type"):
         for question in chosen:
             results[question] += 1
         results = {user_id: results}
-    else:
-        results = {user_id: chosen}
-    context.bot_data["answers"].update(results)
+        context.bot_data["answers"].update(results)
 
 
 async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
     poll_type = context.bot_data["poll"].get("type")
     users_answers = context.bot_data["answers"]
-    if poll_type != "schultze":
-        questions = {
-            question: 0 for question in context.bot_data["poll"]["questions"]
-        }
-        for user_answer in users_answers.values():
-            for answer in user_answer:
-                if user_answer[answer] == 1:
-                    questions[answer] += 1
+    questions = {
+        question: 0 for question in context.bot_data["poll"]["questions"]
+    }
+    for user_answer in users_answers.values():
+        for answer in user_answer:
+            if user_answer[answer] == 1:
+                questions[answer] += 1
 
-        await context.bot.delete_message(
-            Config.GROUP_ID.value, context.bot_data["poll"]["id"]
-        )
-        if poll_type == "asc":
-            winner_num = max(questions.items(), key=lambda item: item[1])[1]
-        else:
-            winner_num = min(questions.items(), key=lambda item: item[1])[1]
-        winner_name = choice(
-            [pair[0] for pair in questions.items() if pair[1] == winner_num]
-        )
-        winner = await assign_winner(winner_name)
-
-        context.chat_data["active_voting"] = False
-        context.bot_data["winner"] = winner_name
-        context.bot_data["poll"].clear()
-        context.bot_data["answers"].clear()
-        context.job_queue.run_once(
-            create_rating_voting,
-            when=context.bot_data.get("date"),
-            chat_id=Config.GROUP_ID.value,
-        )
-        if not winner:
-            return await context.bot.send_message(
-                Config.GROUP_ID.value, "Не удалось определить победителя!"
-            )
-        return await context.bot.send_message(
-            Config.GROUP_ID.value, "Вызовите /now, чтобы увидеть победителя!"
-        )
+    await context.bot.delete_message(
+        Config.GROUP_ID.value, context.bot_data["poll"]["id"]
+    )
+    if poll_type == "asc":
+        winner_num = max(questions.items(), key=lambda item: item[1])[1]
     else:
-        questions = []
-        for user_answer in users_answers.values():
-            preferences = []
-            for answer in user_answer:
-                if user_answer[answer] == 1:
-                    preferences.append(answer)
-            questions.append(preferences)
-        # TODO: IMPLEMENT SCHULTZE METHOD
+        winner_num = min(questions.items(), key=lambda item: item[1])[1]
+    winner_name = choice(
+        [pair[0] for pair in questions.items() if pair[1] == winner_num]
+    )
+    winner = await assign_winner(winner_name)
+
+    context.chat_data["active_voting"] = False
+    context.bot_data["winner"] = winner_name
+    context.bot_data["poll"].clear()
+    context.bot_data["answers"].clear()
+    context.job_queue.run_once(
+        create_rating_voting,
+        when=context.bot_data.get("date"),
+        chat_id=Config.GROUP_ID.value,
+    )
+    if not winner:
+        return await context.bot.send_message(
+            Config.GROUP_ID.value, "Не удалось определить победителя!"
+        )
+    return await context.bot.send_message(
+        Config.GROUP_ID.value, "Вызовите /now, чтобы увидеть победителя!"
+    )
 
 
 async def create_rating_voting(context: ContextTypes.DEFAULT_TYPE):
