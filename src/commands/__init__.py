@@ -36,7 +36,10 @@ def get_all_handlers() -> list:
         CommandHandler("now", get_current_movies),
         MessageHandler(
             Regex(r"^#предлагаю\s")
-            & Regex(r"https://www.kinopoisk.ru/film/\d+/[\s|,]?"),
+            & Regex(
+                r"https://www.kinopoisk.ru/film/\d+/"
+                r"(\?utm_referrer=\w+)?[\s|,]?"
+            ),
             suggest_movie,
         ),
         PollAnswerHandler(receive_voting_results),
