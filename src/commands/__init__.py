@@ -15,6 +15,7 @@ from src.commands.creating import (
     get_suggestions_and_create_voting,
     cancel,
     receive_voting_results,
+    cancel_current_voting,
 )
 from src.commands.getting import (
     change_watch_date,
@@ -34,6 +35,7 @@ def get_all_handlers() -> list:
             "custom", define_custom_movie_description, has_args=True
         ),
         CommandHandler("now", get_current_movies),
+        CommandHandler("cancel_voting", cancel_current_voting),
         MessageHandler(
             Regex(r"^#предлагаю\s")
             & Regex(
