@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from telegram.ext import ContextTypes
 
 
-def get_relative_date(context: ContextTypes.DEFAULT_TYPE):
-    current_datetime = datetime.now()
+async def get_relative_date(context: ContextTypes.DEFAULT_TYPE):
+    current_datetime = datetime.now().replace(microsecond=0)
     weekday = datetime.weekday(datetime.now())
     date = ""
     if weekday == 3:

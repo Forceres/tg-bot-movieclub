@@ -2,17 +2,21 @@
 
 ## Approximate functionality:
 
-1. Voting for next film
-    1. Deleting film from the vote
-    2. Adding film to the vote
-    3. Cancel the vote
-    4. Complete the vote
-2. Storing watched films
-3. Auto-timetable for watching films (2 times per week)
-4. Opportunity to get all watched films
+1. ~~Voting for next film~~
+    1. ~~Deleting the voting~~
+    2. ~~Cancel the voting~~
+    3. Complete the vote
+2. ~~Storing watched films~~
+3. ~~Auto-timetable for watching films~~
+4. ~~Opportunity to get all watched films~~
+5. ~~Estimate movies after watch via poll~~
+6. ~~Change watch date~~
+7. ~~Give an opportunity to set custom description of the output movies~~
+8. ~~Give an opportunity to set custom description of the voting~~
+
 
 ## Suggestions:
 
-1. Auto-parse *kinopoisk.ru* to get short description of the film
+1. ~~Kinopoisk api use~~
 
-## Current progress: 0/100%
+## Current progress: 70/100%
