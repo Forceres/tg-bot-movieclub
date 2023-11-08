@@ -47,5 +47,12 @@ class Queries(Enum):
         """SELECT id FROM sessions WHERE finished_at is NULL"""
     )
     CREATE_SESSION = """INSERT INTO sessions DEFAULT VALUES RETURNING id"""
-    UPDATE_RATING = """UPDATE movies SET rating = (?) WHERE title == (?)"""
+    UPDATE_RATING_AND_FINISH_WATCH = """UPDATE movies SET rating = (?),
+    finished_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime') date
+    WHERE title == (?)"""
     DELETE_CURRENT_VOTING = """DELETE FROM votings WHERE finished_at IS NULL"""
+    FINISH_SESSION = """UPDATE sessions SET
+    finished_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime')"""
+    CHECK_IF_MOVIE_ALREADY_IN_SESSION = (
+        """SELECT movie_id FROM movies_sessions WHERE session_id = (?)"""
+    )
