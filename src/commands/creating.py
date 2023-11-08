@@ -1,3 +1,4 @@
+import datetime
 from math import ceil
 from random import choice
 
@@ -8,16 +9,23 @@ from src.config import Config
 from src.db.services import (
     suggest_new_movies,
     update_existed_movies,
-    update_rating,
     assign_winner,
     check_if_movies_exist,
     create_new_voting,
     delete_voting,
 )
-from src.db.services.getting import retrieve_suggested_movies
+from src.db.services.creating import (
+    update_rating_and_finish_watch,
+    finish_session,
+)
+from src.db.services.getting import (
+    retrieve_suggested_movies,
+    retrieve_current_session_movies,
+)
 from src.utils.authentication import authentication, admin_only
 from src.utils.callback_data_helpers import process_callback_data
 from src.utils.convert_json_to_movie import process_movies_json
+from src.utils.date_helper import get_relative_date
 from src.utils.kinopoisk_api_call import api_call
 from src.utils.parse_raw_string import parse_ids, parse_refs
 
@@ -102,7 +110,7 @@ async def base_settings_button_callback(
             ]
         )
 
-        if len(*movies) > limit:
+        if len([*movies]) > limit:
             markup = InlineKeyboardMarkup(keyboard)
             await update.get_bot().edit_message_text(
                 "Выбери фильмы!"
@@ -167,13 +175,13 @@ async def get_suggestions_and_create_voting(
     ]
     await create_new_voting(chosen_movies_ids, context.chat_data["type"])
     context.chat_data["active_voting"] = True
+
     poll = await update.get_bot().send_poll(
         Config.GROUP_ID.value,
         "Что смотрим?",
         chosen_movies,
         is_anonymous=False,
         allows_multiple_answers=True,
-        open_period=context.chat_data["duration"],
     )
     context.bot_data.update(
         {
@@ -184,11 +192,16 @@ async def get_suggestions_and_create_voting(
             }
         }
     )
+    duration = int(context.chat_data["duration"])
+    await update.get_bot().delete_message(
+        Config.GROUP_ID.value, context.chat_data["message_id"]
+    )
     context.job_queue.run_once(
         process_voting_after_closing,
-        when=context.chat_data["duration"],
+        when=duration,
         data=update.effective_chat.full_name,
         chat_id=update.message.chat_id,
+        name="voting",
     )
     return ConversationHandler.END
 
@@ -212,8 +225,11 @@ async def receive_voting_results(
 
 
 async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.delete_message(
+        Config.GROUP_ID.value, context.bot_data["poll"]["id"]
+    )
     poll_type = context.bot_data["poll"].get("type")
-    users_answers = context.bot_data["answers"]
+    users_answers = context.bot_data.get("answers")
     questions = {
         question: 0 for question in context.bot_data["poll"]["questions"]
     }
@@ -221,10 +237,6 @@ async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
         for answer in user_answer:
             if user_answer[answer] == 1:
                 questions[answer] += 1
-
-    await context.bot.delete_message(
-        Config.GROUP_ID.value, context.bot_data["poll"]["id"]
-    )
     if poll_type == "asc":
         winner_num = max(questions.items(), key=lambda item: item[1])[1]
     else:
@@ -238,11 +250,26 @@ async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
     context.bot_data["winner"] = winner_name
     context.bot_data["poll"].clear()
     context.bot_data["answers"].clear()
-    context.job_queue.run_once(
-        create_rating_voting,
-        when=context.bot_data.get("date"),
-        chat_id=Config.GROUP_ID.value,
-    )
+
+    current_movies = await retrieve_current_session_movies()
+
+    await get_relative_date(context)
+
+    jobs = context.job_queue.get_jobs_by_name("rating")
+
+    if jobs:
+        for job in jobs:
+            job.schedule_removal()
+
+    date = datetime.datetime.fromisoformat(context.bot_data.get("date"))
+    for _ in current_movies:
+        context.job_queue.run_once(
+            create_rating_voting,
+            when=date,
+            chat_id=Config.GROUP_ID.value,
+            name="rating",
+        )
+        date = date + datetime.timedelta(minutes=10)
     if not winner:
         return await context.bot.send_message(
             Config.GROUP_ID.value, "Не удалось определить победителя!"
@@ -254,21 +281,30 @@ async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
 
 async def create_rating_voting(context: ContextTypes.DEFAULT_TYPE):
     questions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+    current_movies = await retrieve_current_session_movies()
+    movies = []
+    for movie in range(len(*current_movies)):
+        movies.append(movie)
+    context.bot_data["current_movies"] = movies
+    current_movie = movies[0]
     rating_poll = await context.bot.send_poll(
         Config.GROUP_ID.value,
-        f"Оцените фильм (от 1 до 10): {context.bot_data['winner']}",
+        f"Оцените фильм (от 1 до 10): {current_movie}",
         options=questions,
         is_anonymous=False,
         allows_multiple_answers=False,
-        open_period=10,
+        open_period=600,
+    )
+
+    context.bot_data["rated"] = current_movie
+
+    context.job_queue.run_once(
+        receive_rating_results,
+        datetime.datetime.utcnow() + datetime.timedelta(minutes=10),
+        chat_id=Config.GROUP_ID.value,
     )
     rating_poll = {"poll": {"id": rating_poll.id, "questions": questions}}
     context.bot_data.update(rating_poll)
-    context.job_queue.run_once(
-        receive_rating_results,
-        context.bot_data["date"],
-        chat_id=Config.GROUP_ID.value,
-    )
     return await context.bot.send_message(
         Config.GROUP_ID.value, str(context.bot_data["poll"])
     )
@@ -283,10 +319,15 @@ async def receive_rating_results(context: ContextTypes.DEFAULT_TYPE):
             if user_answer[answer] == 1:
                 rating += int(answer)
     rating /= len(user_answers)
-    updated = await update_rating([rating, context.bot_data["winner"]])
+    updated = await update_rating_and_finish_watch(
+        [rating, context.bot_data["rated"]]
+    )
+    jobs = context.job_queue.get_jobs_by_name("rating")
+    if not jobs:
+        await finish_session()
     await context.bot.send_message(
         chat_id=Config.GROUP_ID.value,
-        text="Фильм: %s, набрал %s" % (context.bot_data["winner"], rating),
+        text="Фильм: %s, набрал %s" % (context.bot_data["rated"], rating),
     )
     await context.bot.delete_message(
         Config.GROUP_ID.value, context.bot_data["poll"]["id"]
@@ -307,13 +348,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def delete_current_voting(
+async def cancel_current_voting(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     poll = context.bot_data.get("poll")
     if not poll:
         return await update.message.reply_text("Голосование не запущено!")
     deleted = await delete_voting()
+    job = context.job_queue.get_jobs_by_name("voting")
+    if job:
+        job[0].schedule_removal()
     if deleted:
         await update.get_bot().delete_message(
             Config.GROUP_ID.value, poll["id"]

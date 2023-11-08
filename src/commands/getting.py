@@ -1,12 +1,13 @@
 from locale import setlocale, LC_ALL
 from logging import getLogger
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from telegram import Update, Message
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from telegraph.exceptions import TelegraphException
 
+from src.commands.creating import create_rating_voting
 from src.config import Config
 from src.db.services import (
     retrieve_current_session_movies,
@@ -38,7 +39,6 @@ async def change_watch_date(
             "Некорректный формат, передайте день(/,:,-)месяц, н-р, 03/05"
         )
     year = datetime.now().year
-    fmt = ""
     if "-" in date_string[0]:
         fmt = "%d-%m"
     elif ":" in date_string[0]:
@@ -50,13 +50,27 @@ async def change_watch_date(
             "Некорректный формат, передайте день(/,:,-)месяц, н-р, 03/05"
         )
     try:
-        setlocale(LC_ALL, "ru")
+        setlocale(LC_ALL, "ru_RU.UTF-8")
         date = (
             datetime.strptime(date_string[0], fmt)
-            .replace(year=year, hour=21, minute=30)
+            .replace(year=year, hour=22, minute=00)
             .isoformat()
         )
         context.bot_data["date"] = date
+        jobs = context.job_queue.get_jobs_by_name("rating")
+        current_movies = await retrieve_current_session_movies()
+        if jobs:
+            for job in jobs:
+                job[0].schedule_removal()
+        job_date = datetime.fromisoformat(context.bot_data.get("date"))
+        for _ in current_movies:
+            context.job_queue.run_once(
+                create_rating_voting,
+                when=job_date,
+                chat_id=Config.GROUP_ID.value,
+                name="rating",
+            )
+            job_date = job_date + timedelta(minutes=10)
         return await update.message.reply_text(
             "Фильм перенесён!\nТекущая дата просмотра: %s"
             % datetime.fromisoformat(date).strftime("%A, %d-%m-%Y")
