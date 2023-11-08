@@ -39,6 +39,12 @@ async def assign_winner(winner_name: str) -> bool:
         if not session_id:
             cursor = await db.single_query(Queries.CREATE_SESSION.value)
             session_id = await cursor.fetchone()
+        cursor = await db.single_query(
+            Queries.CHECK_IF_MOVIE_ALREADY_IN_SESSION.value, session_id
+        )
+        movie_id = await cursor.fetchone()
+        if movie_id:
+            return False
         await db.single_query(
             Queries.SYNCHRONIZE_MOVIES_SESSIONS_TABLE.value,
             [winner_id[0], session_id[0]],
@@ -46,9 +52,11 @@ async def assign_winner(winner_name: str) -> bool:
         return True
 
 
-async def update_rating(data: list) -> bool:
+async def update_rating_and_finish_watch(data: list) -> bool:
     async with SqliteRepository() as db:
-        await db.single_query(Queries.UPDATE_RATING.value, data)
+        await db.single_query(
+            Queries.UPDATE_RATING_AND_FINISH_WATCH.value, data
+        )
         return True
 
 
@@ -81,4 +89,10 @@ async def suggest_new_movies(movies: list) -> bool:
 async def delete_voting() -> bool:
     async with SqliteRepository() as db:
         await db.single_query(Queries.DELETE_CURRENT_VOTING.value)
+        return True
+
+
+async def finish_session() -> bool:
+    async with SqliteRepository() as db:
+        await db.single_query(Queries.FINISH_SESSION.value)
         return True
