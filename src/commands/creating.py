@@ -16,7 +16,8 @@ from src.db.services import (
 )
 from src.db.services.creating import (
     update_rating_and_finish_watch,
-    finish_session, add_movies_to_current_session,
+    finish_session,
+    add_movies_to_current_session,
 )
 from src.db.services.getting import (
     retrieve_suggested_movies,
@@ -30,7 +31,9 @@ from src.utils.kinopoisk_api_call import api_call
 from src.utils.parse_raw_string import parse_ids, parse_refs
 
 
-async def prepare_suggested_movies_for_output(context: ContextTypes.DEFAULT_TYPE):
+async def prepare_suggested_movies_for_output(
+    context: ContextTypes.DEFAULT_TYPE,
+):
     movies = await retrieve_suggested_movies()
     if not movies:
         return False
@@ -55,13 +58,15 @@ async def prepare_suggested_movies_for_output(context: ContextTypes.DEFAULT_TYPE
     output = "\n".join(
         [
             f"{offset + idx + 1}. {movie[1]}"
-            for idx, movie in enumerate(movies[offset: limit + offset])
+            for idx, movie in enumerate(movies[offset : limit + offset])
         ]
     )
     return output
 
 
-async def send_prepared_output(output: str, update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def send_prepared_output(
+    output: str, update: Update, context: ContextTypes.DEFAULT_TYPE
+):
     movies, offset, limit, movies_iterations, keyboard = context.chat_data[
         "suggested"
     ]
@@ -85,9 +90,13 @@ async def send_prepared_output(output: str, update: Update, context: ContextType
         )
 
 
-async def add_movie_to_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def add_movie_to_session(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
     await update.message.delete()
-    context.chat_data["message_id"] = (await update.message.chat.send_message("Подожди секунду")).id
+    context.chat_data["message_id"] = (
+        await update.message.chat.send_message("Подожди секунду")
+    ).id
     output = await prepare_suggested_movies_for_output(context)
     if not output:
         return await update.message.chat.send_message(
@@ -97,7 +106,9 @@ async def add_movie_to_session(update: Update, context: ContextTypes.DEFAULT_TYP
     return 1
 
 
-async def process_integer_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def process_integer_answers(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
     chosen_movie_numbers = {
         int(number.strip()) - 1 for number in update.message.text.split(",")
     }
@@ -107,7 +118,9 @@ async def process_integer_answers(update: Update, context: ContextTypes.DEFAULT_
     return True
 
 
-async def retrieve_chosen_movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def retrieve_chosen_movies(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
     if not await process_integer_answers(update, context):
         return
     chosen_movie_numbers = context.chat_data["chosen"]
@@ -125,7 +138,7 @@ async def cancel_add(_update: Update, _context: ContextTypes.DEFAULT_TYPE):
 
 @admin_only
 async def create_voting_type_keyboard(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     if context.chat_data.get("active_voting"):
         return await update.message.reply_text(
@@ -150,7 +163,7 @@ async def create_voting_type_keyboard(
 
 
 async def base_settings_button_callback(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
     await query.answer()
@@ -183,7 +196,7 @@ async def base_settings_button_callback(
 
 
 async def paginate_movies_button_callback(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
     await query.answer()
@@ -198,7 +211,7 @@ async def paginate_movies_button_callback(
         output = "\n".join(
             [
                 f"{offset + idx + 1}. {movie[1]}"
-                for idx, movie in enumerate(movies[offset: limit + offset])
+                for idx, movie in enumerate(movies[offset : limit + offset])
             ]
         )
         await query.message.edit_text(
@@ -207,7 +220,7 @@ async def paginate_movies_button_callback(
 
 
 async def get_suggestions_and_create_voting(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     if not await process_integer_answers(update, context):
         return
@@ -256,7 +269,7 @@ async def get_suggestions_and_create_voting(
 
 
 async def receive_voting_results(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     if not context.bot_data.get("answers"):
         context.bot_data["answers"] = {}
@@ -403,7 +416,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cancel_current_voting(
-        update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     poll = context.bot_data.get("poll")
     if not poll:
