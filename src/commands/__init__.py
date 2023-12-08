@@ -15,7 +15,7 @@ from src.commands.creating import (
     get_suggestions_and_create_voting,
     cancel,
     receive_voting_results,
-    cancel_current_voting,
+    cancel_current_voting, add_movie_to_session, retrieve_chosen_movies, cancel_add,
 )
 from src.commands.getting import (
     change_watch_date,
@@ -45,6 +45,12 @@ def get_all_handlers() -> list:
             suggest_movie,
         ),
         PollAnswerHandler(receive_voting_results),
+        ConversationHandler(entry_points=[CommandHandler("adds", add_movie_to_session)],
+                            states={
+                                1: [CallbackQueryHandler(paginate_movies_button_callback),
+                                    MessageHandler(Regex(r"(\d{1,3}(?:,\s*\d{1,3})(?![\d\s|[\w|\W]))") | Regex(r"\d"),
+                                                   retrieve_chosen_movies)]
+                            }, fallbacks=[CommandHandler("cancel", cancel_add)]),
         ConversationHandler(
             entry_points=[CommandHandler("vote", create_voting_type_keyboard)],
             states={
