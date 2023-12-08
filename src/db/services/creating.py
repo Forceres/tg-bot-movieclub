@@ -32,6 +32,24 @@ async def assign_winner(winner_name: str) -> bool:
             Queries.DEFINE_WINNER.value, [ids[0], ids[1]]
         )
         winner_id = await cursor.fetchone()
+        session_id = await get_current_session()
+        cursor = await db.single_query(
+            Queries.CHECK_IF_MOVIE_IN_CURRENT_SESSION.value, [session_id, winner_id]
+        )
+        movie_id = await cursor.fetchone()
+        if movie_id:
+            await db.rollback()
+            return False
+        await db.single_query(
+            Queries.SYNCHRONIZE_MOVIES_SESSIONS_TABLE.value,
+            [winner_id[0], session_id[0]],
+        )
+        return True
+
+
+async def get_current_session():
+    async with SqliteRepository() as db:
+        await db.single_query("BEGIN")
         cursor = await db.single_query(
             Queries.CHECK_IF_CURRENT_SESSION_EXISTS.value
         )
@@ -39,16 +57,23 @@ async def assign_winner(winner_name: str) -> bool:
         if not session_id:
             cursor = await db.single_query(Queries.CREATE_SESSION.value)
             session_id = await cursor.fetchone()
+        return session_id
+
+
+async def add_movies_to_current_session(chosen_movie_ids):
+    session_id = await get_current_session()
+    async with SqliteRepository() as db:
+        await db.single_query("BEGIN")
         cursor = await db.single_query(
-            Queries.CHECK_IF_MOVIE_ALREADY_IN_SESSION.value, session_id
+            Queries.GET_MOVIES_IDS_IN_CURRENT_SESSION.value, session_id
         )
-        movie_id = await cursor.fetchone()
-        if movie_id:
+        movie_ids = await cursor.fetchall()
+        movie_ids_to_add = list(filter(lambda movie_id: movie_id not in movie_ids, chosen_movie_ids))
+        if not movie_ids_to_add:
+            await db.rollback()
             return False
-        await db.single_query(
-            Queries.SYNCHRONIZE_MOVIES_SESSIONS_TABLE.value,
-            [winner_id[0], session_id[0]],
-        )
+        await db.multi_query(Queries.INSERT_MOVIES_INTO_CURRENT_SESSION.value,
+                             [(movie_id, session_id[0]) for movie_id in movie_ids_to_add])
         return True
 
 

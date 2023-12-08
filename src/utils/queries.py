@@ -53,6 +53,12 @@ class Queries(Enum):
     DELETE_CURRENT_VOTING = """DELETE FROM votings WHERE finished_at IS NULL"""
     FINISH_SESSION = """UPDATE sessions SET
     finished_at = strftime('%Y-%m-%dT%H:%M','now', 'localtime')"""
-    CHECK_IF_MOVIE_ALREADY_IN_SESSION = (
+    GET_MOVIES_IDS_IN_CURRENT_SESSION = (
         """SELECT movie_id FROM movies_sessions WHERE session_id = (?)"""
     )
+    CHECK_IF_MOVIE_IN_CURRENT_SESSION = """SELECT movie_id FROM movies_sessions
+    WHERE session_id = (?) AND movie_id = (?)"""
+    INSERT_MOVIES_INTO_CURRENT_SESSION = """INSERT INTO movies_sessions (movie_id, session_id) VALUES (?,?)"""
+    GET_MOVIE_ID_BY_TITLE = """SELECT id FROM movies WHERE title = (?)"""
+    GET_MOVIE_TITLE_BY_ID = """SELECT title FROM movies WHERE id = (?)"""
+
