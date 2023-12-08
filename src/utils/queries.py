@@ -58,7 +58,8 @@ class Queries(Enum):
     )
     CHECK_IF_MOVIE_IN_CURRENT_SESSION = """SELECT movie_id FROM movies_sessions
     WHERE session_id = (?) AND movie_id = (?)"""
-    INSERT_MOVIES_INTO_CURRENT_SESSION = """INSERT INTO movies_sessions (movie_id, session_id) VALUES (?,?)"""
+    INSERT_MOVIES_INTO_CURRENT_SESSION = (
+        """INSERT INTO movies_sessions (movie_id, session_id) VALUES (?,?)"""
+    )
     GET_MOVIE_ID_BY_TITLE = """SELECT id FROM movies WHERE title = (?)"""
     GET_MOVIE_TITLE_BY_ID = """SELECT title FROM movies WHERE id = (?)"""
-

@@ -34,7 +34,8 @@ async def assign_winner(winner_name: str) -> bool:
         winner_id = await cursor.fetchone()
         session_id = await get_current_session()
         cursor = await db.single_query(
-            Queries.CHECK_IF_MOVIE_IN_CURRENT_SESSION.value, [session_id, winner_id]
+            Queries.CHECK_IF_MOVIE_IN_CURRENT_SESSION.value,
+            [session_id, winner_id],
         )
         movie_id = await cursor.fetchone()
         if movie_id:
@@ -68,12 +69,18 @@ async def add_movies_to_current_session(chosen_movie_ids):
             Queries.GET_MOVIES_IDS_IN_CURRENT_SESSION.value, session_id
         )
         movie_ids = await cursor.fetchall()
-        movie_ids_to_add = list(filter(lambda movie_id: movie_id not in movie_ids, chosen_movie_ids))
+        movie_ids_to_add = list(
+            filter(
+                lambda movie_id: movie_id not in movie_ids, chosen_movie_ids
+            )
+        )
         if not movie_ids_to_add:
             await db.rollback()
             return False
-        await db.multi_query(Queries.INSERT_MOVIES_INTO_CURRENT_SESSION.value,
-                             [(movie_id, session_id[0]) for movie_id in movie_ids_to_add])
+        await db.multi_query(
+            Queries.INSERT_MOVIES_INTO_CURRENT_SESSION.value,
+            [(movie_id, session_id[0]) for movie_id in movie_ids_to_add],
+        )
         return True
 
 
