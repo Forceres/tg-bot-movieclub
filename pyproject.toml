@@ -21,11 +21,11 @@ exclude = '''
 
 [tool.poetry.dependencies]
 python = "^3.11"
-python-telegram-bot = {extras = ["job-queue"], version = "^20.6"}
-aiosqlite = "^0.19.0"
 python-dotenv = "^1.0.0"
 colorama = "^0.4.6"
 telegraph = "^2.2.0"
+python-telegram-bot = "^20.6"
+aiosqlite = "^0.19.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"
