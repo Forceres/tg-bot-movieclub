@@ -46,6 +46,10 @@ class AbstractRepository(ABC):
     ) -> Cursor | None:
         raise NotImplementedError
 
+    @abstractmethod
+    async def rollback(self) -> None:
+        raise NotImplementedError
+
 
 class SqliteRepository(AbstractRepository, object):
     """Class for asynchronous interaction with database. ONLY ASYNC"""
