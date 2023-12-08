@@ -16,7 +16,7 @@ from src.db.services import (
 )
 from src.db.services.creating import (
     update_rating_and_finish_watch,
-    finish_session,
+    finish_session, add_movies_to_current_session,
 )
 from src.db.services.getting import (
     retrieve_suggested_movies,
@@ -30,16 +30,109 @@ from src.utils.kinopoisk_api_call import api_call
 from src.utils.parse_raw_string import parse_ids, parse_refs
 
 
+async def prepare_suggested_movies_for_output(context: ContextTypes.DEFAULT_TYPE):
+    movies = await retrieve_suggested_movies()
+    if not movies:
+        return False
+    offset = 0
+    limit = 10
+    movies_iterations = ceil(len([*movies]) / limit)
+    keyboard = [
+        [
+            InlineKeyboardButton("<", callback_data="left"),
+            InlineKeyboardButton(">", callback_data="right"),
+        ]
+    ]
+
+    context.chat_data["suggested"] = [
+        movies,
+        offset,
+        limit,
+        movies_iterations,
+        keyboard,
+    ]
+
+    output = "\n".join(
+        [
+            f"{offset + idx + 1}. {movie[1]}"
+            for idx, movie in enumerate(movies[offset: limit + offset])
+        ]
+    )
+    return output
+
+
+async def send_prepared_output(output: str, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    movies, offset, limit, movies_iterations, keyboard = context.chat_data[
+        "suggested"
+    ]
+    if len([*movies]) > limit:
+        markup = InlineKeyboardMarkup(keyboard)
+        await update.get_bot().edit_message_text(
+            "Выбери фильмы! "
+            "P.S. передавай номера фильмов через запятую (минимум 2),"
+            " 🤫🤫🤫 только никому не говори)\n%s" % output,
+            chat_id=Config.GROUP_ID.value,
+            message_id=context.chat_data["message_id"],
+            reply_markup=markup,
+        )
+    else:
+        await update.get_bot().edit_message_text(
+            "Выбери фильмы! "
+            "P.S. передавай номера фильмов через запятую (минимум 2),"
+            " 🤫🤫🤫 только никому не говори)\n%s" % output,
+            chat_id=Config.GROUP_ID.value,
+            message_id=context.chat_data["message_id"],
+        )
+
+
+async def add_movie_to_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.delete()
+    context.chat_data["message_id"] = (await update.message.chat.send_message("Подожди секунду")).id
+    output = await prepare_suggested_movies_for_output(context)
+    if not output:
+        return await update.message.chat.send_message(
+            "В предложке нет фильмов!"
+        )
+    await send_prepared_output(output, update, context)
+    return 1
+
+
+async def process_integer_answers(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chosen_movie_numbers = {
+        int(number.strip()) - 1 for number in update.message.text.split(",")
+    }
+    context.chat_data["chosen"] = chosen_movie_numbers
+    if -1 in chosen_movie_numbers:
+        return False
+    return True
+
+
+async def retrieve_chosen_movies(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await process_integer_answers(update, context):
+        return
+    chosen_movie_numbers = context.chat_data["chosen"]
+    movies = context.chat_data["suggested"][0]
+    chosen_movie_ids = [movies[number][0] for number in chosen_movie_numbers]
+    added = await add_movies_to_current_session(chosen_movie_ids)
+    if added:
+        await update.message.chat.send_message("Добавил ваш(и) фильм(ы)!")
+        return ConversationHandler.END
+
+
+async def cancel_add(_update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    return ConversationHandler.END
+
+
 @admin_only
 async def create_voting_type_keyboard(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+        update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    await update.message.delete()
     if context.chat_data.get("active_voting"):
         return await update.message.reply_text(
             "Голосование уже запущено!"
             "Нельзя создавать 2 голосования одновременно!"
         )
+    await update.message.delete()
     keyboard = [
         [
             InlineKeyboardButton("Возрастающее", callback_data="asc"),
@@ -57,7 +150,7 @@ async def create_voting_type_keyboard(
 
 
 async def base_settings_button_callback(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+        update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
     await query.answer()
@@ -80,59 +173,17 @@ async def base_settings_button_callback(
         )
     else:
         context.chat_data["duration"] = query.data
-        movies = await retrieve_suggested_movies()
-        if not movies:
+        output = await prepare_suggested_movies_for_output(context)
+        if not output:
             return await update.message.chat.send_message(
                 "В предложке нет фильмов!"
             )
-        offset = 0
-        limit = 10
-        movies_iterations = ceil(len([*movies]) / limit)
-        keyboard = [
-            [
-                InlineKeyboardButton("<", callback_data="left"),
-                InlineKeyboardButton(">", callback_data="right"),
-            ]
-        ]
-
-        context.chat_data["suggested"] = [
-            movies,
-            offset,
-            limit,
-            movies_iterations,
-            keyboard,
-        ]
-
-        output = "\n".join(
-            [
-                f"{offset + idx + 1}. {movie[1]}"
-                for idx, movie in enumerate(movies[offset : limit + offset])
-            ]
-        )
-
-        if len([*movies]) > limit:
-            markup = InlineKeyboardMarkup(keyboard)
-            await update.get_bot().edit_message_text(
-                "Выбери фильмы!"
-                "P.S. передавай номера фильмов через запятую (минимум 2),"
-                " 🤫🤫🤫 только никому не говори)\n%s" % output,
-                chat_id=Config.GROUP_ID.value,
-                message_id=context.chat_data["message_id"],
-                reply_markup=markup,
-            )
-        else:
-            await update.get_bot().edit_message_text(
-                "Выбери фильмы!"
-                "P.S. передавай номера фильмов через запятую (минимум 2),"
-                " 🤫🤫🤫 только никому не говори)\n%s" % output,
-                chat_id=Config.GROUP_ID.value,
-                message_id=context.chat_data["message_id"],
-            )
+        await send_prepared_output(output, update, context)
         return 2
 
 
 async def paginate_movies_button_callback(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+        update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     query = update.callback_query
     await query.answer()
@@ -147,7 +198,7 @@ async def paginate_movies_button_callback(
         output = "\n".join(
             [
                 f"{offset + idx + 1}. {movie[1]}"
-                for idx, movie in enumerate(movies[offset : limit + offset])
+                for idx, movie in enumerate(movies[offset: limit + offset])
             ]
         )
         await query.message.edit_text(
@@ -156,14 +207,12 @@ async def paginate_movies_button_callback(
 
 
 async def get_suggestions_and_create_voting(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+        update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
-    chosen_movie_numbers = {
-        int(number.strip()) - 1 for number in update.message.text.split(",")
-    }
-
-    if -1 in chosen_movie_numbers or len(chosen_movie_numbers) < 2:
+    if not await process_integer_answers(update, context):
         return
+
+    chosen_movie_numbers = context.chat_data["chosen"]
 
     movies = context.chat_data["suggested"][0]
     chosen_movies = [movies[number][1] for number in chosen_movie_numbers]
@@ -207,7 +256,7 @@ async def get_suggestions_and_create_voting(
 
 
 async def receive_voting_results(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+        update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     if not context.bot_data.get("answers"):
         context.bot_data["answers"] = {}
@@ -224,10 +273,7 @@ async def receive_voting_results(
         context.bot_data["answers"].update(results)
 
 
-async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.delete_message(
-        Config.GROUP_ID.value, context.bot_data["poll"]["id"]
-    )
+async def define_winner(context: ContextTypes.DEFAULT_TYPE):
     poll_type = context.bot_data["poll"].get("type")
     users_answers = context.bot_data.get("answers")
     questions = {
@@ -244,6 +290,14 @@ async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
     winner_name = choice(
         [pair[0] for pair in questions.items() if pair[1] == winner_num]
     )
+    return winner_name
+
+
+async def process_voting_after_closing(context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.delete_message(
+        Config.GROUP_ID.value, context.bot_data["poll"]["id"]
+    )
+    winner_name = await define_winner(context)
     winner = await assign_winner(winner_name)
 
     context.chat_data["active_voting"] = False
@@ -349,13 +403,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cancel_current_voting(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+        update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     poll = context.bot_data.get("poll")
     if not poll:
         return await update.message.reply_text("Голосование не запущено!")
     deleted = await delete_voting()
     job = context.job_queue.get_jobs_by_name("voting")
+    context.chat_data["active_voting"] = False
     if job:
         job[0].schedule_removal()
     if deleted:
