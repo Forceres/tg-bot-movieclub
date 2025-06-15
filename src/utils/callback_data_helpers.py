@@ -6,9 +6,7 @@ from telegram.ext import ContextTypes
 logger = getLogger(__name__)
 
 
-async def process_callback_data(
-    context: ContextTypes.DEFAULT_TYPE, query: CallbackQuery
-) -> bool:
+async def process_callback_data(context: ContextTypes.DEFAULT_TYPE, query: CallbackQuery) -> bool:
     (
         movies,
         offset,

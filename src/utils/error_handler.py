@@ -11,9 +11,7 @@ logger = getLogger(__name__)
 
 async def error_handler(_update: Update, context: CallbackContext):
     if isinstance(context.error, RetryAfter):
-        logger.error(
-            "RetryAfter Exception", exc_info=(RetryAfter, context.error, None)
-        )
+        logger.error("RetryAfter Exception", exc_info=(RetryAfter, context.error, None))
         await asyncio.sleep(context.error.retry_after)
     elif isinstance(context.error, BadRequest):
         logger.error(

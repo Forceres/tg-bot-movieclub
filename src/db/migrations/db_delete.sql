@@ -1,5 +1,9 @@
 DROP TABLE IF EXISTS movies_sessions;
+DROP TABLE IF EXISTS voters;
+DROP TABLE IF EXISTS movies_votings_voters;
 DROP TABLE IF EXISTS movies_votings;
 DROP TABLE IF EXISTS votings;
 DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS movies_rating_voters;
 DROP TABLE IF EXISTS movies;
+DROP TABLE IF EXISTS jobs;

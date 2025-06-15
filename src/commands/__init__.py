@@ -5,7 +5,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     PollAnswerHandler,
 )
-from telegram.ext.filters import Regex
+from telegram.ext.filters import Regex, COMMAND
 
 from src.commands.creating import (
     suggest_movie,
@@ -19,12 +19,15 @@ from src.commands.creating import (
     add_movie_to_session,
     retrieve_chosen_movies,
     cancel_add,
+    forced_update_movie_rating,
+    delete_movie_from_current_session,
 )
 from src.commands.getting import (
     change_watch_date,
     get_already_watched_movies_links,
     define_custom_movie_description,
     get_current_movies,
+    retrieve_random_movie_from_kinopoisk,
 )
 from src.commands.introducing import get_help
 
@@ -34,17 +37,14 @@ def get_all_handlers() -> list:
         CommandHandler("help", get_help),
         CommandHandler("cd", change_watch_date, has_args=True),
         CommandHandler("already", get_already_watched_movies_links),
-        CommandHandler(
-            "custom", define_custom_movie_description, has_args=True
-        ),
+        CommandHandler("custom", define_custom_movie_description, has_args=True),
+        CommandHandler("rating", forced_update_movie_rating, has_args=True),
+        CommandHandler("random", retrieve_random_movie_from_kinopoisk),
         CommandHandler("now", get_current_movies),
         CommandHandler("cancel_voting", cancel_current_voting),
+        CommandHandler("del_movie_from_session", delete_movie_from_current_session),
         MessageHandler(
-            Regex(r"^#предлагаю\s")
-            & Regex(
-                r"https://www.kinopoisk.ru/film/\d+/"
-                r"(\?utm_referrer=\w+)?[\s|,]?"
-            ),
+            Regex(r"^#предлагаю\s") & Regex(r"https://www.kinopoisk.ru/film/\d+/" r"(\?utm_referrer=\w+)?[\s|,]?"),
             suggest_movie,
         ),
         PollAnswerHandler(receive_voting_results),
@@ -54,13 +54,13 @@ def get_all_handlers() -> list:
                 1: [
                     CallbackQueryHandler(paginate_movies_button_callback),
                     MessageHandler(
-                        Regex(r"(\d{1,3}(?:,\s*\d{1,3})(?![\d\s|[\w|\W]))")
-                        | Regex(r"\d"),
+                        Regex(r"(\d{1,3}(?:,\s*\d{1,3})(?![\d\s|[\w|\W]))") | Regex(r"\d"),
                         retrieve_chosen_movies,
                     ),
                 ]
             },
-            fallbacks=[CommandHandler("cancel", cancel_add)],
+            fallbacks=[CommandHandler("cancel", cancel_add), MessageHandler(COMMAND, cancel)],
+            block=True,
         ),
         ConversationHandler(
             entry_points=[CommandHandler("vote", create_voting_type_keyboard)],
@@ -74,7 +74,7 @@ def get_all_handlers() -> list:
                     ),
                 ],
             },
-            fallbacks=[CommandHandler("cancel", cancel)],
+            fallbacks=[CommandHandler("cancel", cancel), MessageHandler(COMMAND, cancel)],
         ),
     ]
     return handlers

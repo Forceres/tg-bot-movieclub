@@ -14,3 +14,5 @@ class Config(Enum):
     LOGGING_LEVEL = getenv("LEVEL")
     TOKEN = getenv("TOKEN")
     KINOPOISK_API_KEY = getenv("KINOPOISK_API_KEY")
+    KINOPOISK_API_URL = getenv("KINOPOISK_API_URL")
+    KINOPOISK_API_VERSION = getenv("KINOPOISK_API_VERSION")

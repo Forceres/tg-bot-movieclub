@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS movies_votings
     id        INTEGER PRIMARY KEY,
     movie_id  INTEGER,
     voting_id INTEGER,
+    total_votes INTEGER,
     FOREIGN KEY (movie_id) REFERENCES movies (id) ON DELETE CASCADE,
     FOREIGN KEY (voting_id) REFERENCES votings (id) ON DELETE CASCADE
 );
@@ -51,4 +52,40 @@ CREATE TABLE IF NOT EXISTS movies_sessions
     session_id INTEGER,
     FOREIGN KEY (movie_id) REFERENCES movies (id) ON DELETE CASCADE,
     FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS jobs
+(
+    id INTEGER PRIMARY KEY,
+    "name" VARCHAR(50),
+    func_to_do VARCHAR(100),
+    module_path VARCHAR(250),
+    planned_at TIMESTAMP,
+    message_id INTEGER,
+    extra_data VARCHAR(500)
+);
+
+CREATE TABLE IF NOT EXISTS movies_rating_voters (
+    id INTEGER PRIMARY KEY,
+    movie_id INTEGER,
+    voter_id INTEGER,
+    chosen_value INTEGER,
+    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M', 'now', 'localtime')) NOT NULL,
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+    FOREIGN KEY (voter_id) REFERENCES voters(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS movies_votings_voters (
+    id INTEGER PRIMARY KEY,
+    movie_voting_id INTEGER,
+    voter_id INTEGER,
+    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M', 'now', 'localtime')) NOT NULL,
+    FOREIGN KEY (movie_voting_id) REFERENCES movies_votings(id) ON DELETE CASCADE,
+    FOREIGN KEY (voter_id) REFERENCES voters(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS voters (
+    id INTEGER PRIMARY KEY,
+    tg_id INTEGER,
+    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%dT%H:%M', 'now', 'localtime')) NOT NULL
 );

@@ -14,9 +14,7 @@ class CustomFormatter(Formatter):
     }
 
     def __init__(self):
-        super().__init__(
-            "%(asctime)s %(name)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M"
-        )
+        super().__init__("%(asctime)s %(name)s %(levelname)s %(message)s", "%Y-%m-%d %H:%M")
 
     def format(self, record: LogRecord) -> str:
         color = self.COLOURS.get(record.levelname, "")

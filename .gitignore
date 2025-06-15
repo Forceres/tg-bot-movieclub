@@ -7,3 +7,4 @@ __pypackages__/
 __pycache__/
 db.sqlite3
 src/db/seeders/movies.json
+context

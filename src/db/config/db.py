@@ -19,9 +19,7 @@ class AbstractRepository(ABC):
     """Abstract class for interaction with database. ONlY ASYNC"""
 
     @abstractmethod
-    async def single_query(
-        self, query: LiteralString, params: list | None = None
-    ) -> Cursor | None:
+    async def single_query(self, query: LiteralString, params: list | None = None) -> Cursor | None:
         raise NotImplementedError
 
     @abstractmethod
@@ -41,9 +39,7 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def multi_query(
-        self, query: LiteralString, params: list | None = None
-    ) -> Cursor | None:
+    async def multi_query(self, query: LiteralString, params: list | None = None) -> Cursor | None:
         raise NotImplementedError
 
     @abstractmethod
@@ -83,7 +79,8 @@ class SqliteRepository(AbstractRepository, object):
             await self.commit()
         else:
             await self.rollback()
-        await self._cursor.close()
+        if self._cursor:
+            await self._cursor.close()
 
     @classmethod
     async def create_connection(cls) -> None:
@@ -110,17 +107,13 @@ class SqliteRepository(AbstractRepository, object):
         if not self._cursor:
             self._cursor: Cursor = await self._connection.cursor()
 
-    async def single_query(
-        self, query: LiteralString, params: list | None = None
-    ) -> Cursor | None:
+    async def single_query(self, query: LiteralString, params: list | None = None) -> Cursor | None:
         if params is None:
             params = []
         try:
             response: Cursor = await self._cursor.execute(query, params)
         except (DatabaseError, IntegrityError) as exc:
-            logger.error(
-                "Error while executing query -> %s, error -> %s" % (query, exc)
-            )
+            logger.error("Error while executing query -> %s, error -> %s" % (query, exc))
             raise exc
         else:
             logger.warning("Query completed! -> {}".format(query))
@@ -130,28 +123,22 @@ class SqliteRepository(AbstractRepository, object):
         try:
             response = await self._cursor.executescript(query)
         except (DatabaseError, IntegrityError) as exc:
-            logger.error(
-                "Error while executing query -> %s, error -> %s" % (query, exc)
-            )
+            logger.error("Error while executing query -> %s, error -> %s" % (query, exc))
             await self.rollback()
         else:
             logger.debug("Query -> %s - completed!" % query)
             return response
 
-    async def multi_query(
-        self, query: LiteralString, params: list | None = None
-    ) -> Cursor | None:
+    async def multi_query(self, query: LiteralString, params: list | None = None) -> Cursor | None:
         if params is None:
             params = []
         try:
             response = await self._cursor.executemany(query, params)
         except (DatabaseError, IntegrityError) as exc:
-            logger.error(
-                "Error while executing query -> %s, error -> %s" % (query, exc)
-            )
+            logger.error("Error while executing query -> %s, error -> %s" % (query, exc))
             raise exc
         else:
-            logger.debug("Query -> %s - completed!" % query)
+            logger.warning("Query -> %s - completed!" % query)
             return response
 
     async def commit(self) -> None:

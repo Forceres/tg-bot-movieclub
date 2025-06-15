@@ -19,4 +19,4 @@
 
 1. ~~Kinopoisk api use~~
 
-## Current progress: 70/100%
+## Current progress: 90/100%

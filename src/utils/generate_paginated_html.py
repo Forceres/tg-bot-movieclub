@@ -3,7 +3,7 @@ from math import ceil
 from typing import Iterable
 
 
-async def generate_html(movies: Iterable) -> list:
+def generate_html(movies: Iterable) -> list:
     offset = 0
     limit = 65
     times = ceil(len([*movies]) / limit)
