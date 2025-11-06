@@ -1,3 +1,15 @@
+# ⚠️ ARCHIVED PROJECT ⚠️
+
+**This project is no longer maintained and has been archived.**
+
+## Reasons for Archiving
+
+1. **Code Loss**: Significant uncommitted changes were lost locally, making it difficult to continue development
+2. **Unmaintainability**: The project lacks proper package management and has become difficult to maintain
+3. **Future Plans**: This project will be rewritten from scratch in Go (Golang)
+
+---
+
 # This is TG-Bot for MovieClub.
 
 ## Approximate functionality:
